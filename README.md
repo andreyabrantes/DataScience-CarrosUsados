@@ -1,26 +1,27 @@
-# 🚗 Previsão e Análise de Preços de Carros Usados no Brasil
+# Previsão e Análise de Preços de Carros Usados no Brasil
 
 > Trabalho da disciplina de **Data Science** — 6º Período  
 > Aplicação de técnicas de Machine Learning para previsão de preços de veículos usados no mercado brasileiro.
 
 ---
 
-## 📋 Sumário
+## Sumário
 
-- [Descrição do Projeto](#-descrição-do-projeto)
-- [Dataset](#-dataset)
-- [Análise Exploratória dos Dados (AED)](#-análise-exploratória-dos-dados-aed)
-- [Limpeza e Preparação dos Dados](#-limpeza-e-preparação-dos-dados)
-- [Seleção de Variáveis](#-seleção-de-variáveis)
-- [Modelos de Machine Learning](#-modelos-de-machine-learning)
-- [Resultados](#-resultados)
-- [Tecnologias Utilizadas](#-tecnologias-utilizadas)
-- [Como Executar](#-como-executar)
-- [Estrutura do Projeto](#-estrutura-do-projeto)
+- [Descrição do Projeto](#descrição-do-projeto)
+- [Dataset](#dataset)
+- [Análise Exploratória dos Dados (AED)](#análise-exploratória-dos-dados-aed)
+- [Limpeza e Preparação dos Dados](#limpeza-e-preparação-dos-dados)
+- [Seleção de Variáveis](#seleção-de-variáveis)
+- [Modelos de Machine Learning](#modelos-de-machine-learning)
+- [Resultados](#resultados)
+- [Aprendizado Não Supervisionado (Parte 2)](#aprendizado-não-supervisionado-parte-2)
+- [Tecnologias Utilizadas](#tecnologias-utilizadas)
+- [Como Executar](#como-executar)
+- [Estrutura do Projeto](#estrutura-do-projeto)
 
 ---
 
-## 📌 Descrição do Projeto
+## Descrição do Projeto
 
 O mercado secundário de automóveis no Brasil é altamente fragmentado, com preços variando significativamente com base em fatores como:
 
@@ -38,14 +39,15 @@ Este projeto constrói um **pipeline completo de Machine Learning e Análise Exp
 3. Criar features específicas do domínio (ex: Idade do Veículo, Marca)
 4. Treinar, comparar e avaliar múltiplos modelos de ML (Linear, baseados em Árvore, Ensembles e KNN)
 5. Identificar o modelo com melhor desempenho para previsão de preços
+6. Agrupar os veículos por métodos não supervisionados (K-Means e agrupamento hierárquico de Ward), sem usar o preço, e comparar os resultados com a abordagem supervisionada
 
 ---
 
-## 📂 Dataset
+## Dataset
 
 ### Arquivo: `Carros_Usados_Brasil.csv`
 
-O dataset contém **30 registros** de veículos usados no mercado brasileiro, com as seguintes colunas:
+O dataset contém **30 registros** de veículos usados no mercado brasileiro, com as seguintes colunas. A base é **fictícia**: foi elaborada manualmente pela equipe, com valores próximos aos de veículos populares do mercado brasileiro, e mantém a estrutura de colunas do projeto *Used Car Valuation Engine*. Os valores não correspondem a anúncios reais.
 
 | Coluna | Tipo | Descrição |
 |---|---|---|
@@ -77,7 +79,7 @@ O dataset contém **30 registros** de veículos usados no mercado brasileiro, co
 
 ---
 
-## 🔍 Análise Exploratória dos Dados (AED)
+## Análise Exploratória dos Dados (AED)
 
 A análise exploratória foi realizada para entender a distribuição e as relações entre as variáveis do dataset. As principais etapas incluíram:
 
@@ -85,24 +87,29 @@ A análise exploratória foi realizada para entender a distribuição e as rela�
 - **Análise de tipos e estrutura** com `df.info()` para verificar os tipos de dados de cada coluna
 - **Estatísticas descritivas** com `df.describe()` para obter medidas de tendência central e dispersão
 - **Verificação de valores ausentes** com `df.isnull().sum()` — nenhum valor nulo foi encontrado no dataset
+- **Verificação de duplicados** com `df.duplicated().sum()` — nenhum registro duplicado
+- **Verificação de inconsistências** — valores únicos das categorias, faixas, negativos e limites de plausibilidade
+- **Distribuições** de preço, quilometragem, cilindrada e idade; **relações** de preço com km, cilindrada e idade; **preço por** combustível, câmbio e marca; **correlações** (Pearson e Spearman)
 
 ### Principais Observações
 
-- O dataset não apresentou **valores ausentes** em nenhuma coluna
-- A maioria dos veículos utiliza combustível **Flex**, refletindo a realidade do mercado brasileiro
-- Veículos com motor **Diesel** tendem a ter preços mais elevados (ex: Toyota Hilux, Ford Ranger)
-- Veículos com câmbio **Automático** geralmente apresentam preços superiores aos de câmbio Manual
+- O dataset não apresentou **valores ausentes** nem **duplicados**; não há valores negativos ou impossíveis
+- Inconsistência corrigida: o arquivo usa `Gasoline`, mas o mapeamento de tradução só cobria `Petrol`, deixando 2 veículos com a categoria em inglês
+- A maioria dos veículos utiliza combustível **Flex** (22 de 30)
+- Veículos com motor **Diesel** apresentam preços mais elevados (ex: Toyota Hilux, Ford Ranger)
+- Veículos com câmbio **Automático** apresentam preços superiores aos de câmbio Manual (mediana ≈ R$ 118 mil vs ≈ R$ 55 mil)
+- **Cilindrada** tem a correlação mais forte com o preço (r ≈ 0,83); quilometragem e idade quase não se correlacionam com o preço no conjunto completo, mas entre os veículos Flex a correlação é negativa (≈ −0,64)
 
 ---
 
-## 🛠️ Limpeza e Preparação dos Dados
+## Limpeza e Preparação dos Dados
 
 ### Etapas Realizadas
 
 1. **Remoção de artefatos de indexação**: Verificação e remoção da coluna `Unnamed: 0`, caso presente
 2. **Renomeação de colunas**: Tradução dos nomes das colunas para o português e adaptação ao contexto brasileiro
 3. **Tradução de valores categóricos**:
-   - `Fuel Type`: `Petrol` → `Gasolina`, `Hybrid` → `Híbrido`, `CNG` → `GNV`, `Electric` → `Elétrico`, `LPG` → `GLP`
+   - `Fuel Type`: `Gasoline`/`Petrol` → `Gasolina`, `Hybrid` → `Híbrido`, `CNG` → `GNV`, `Electric` → `Elétrico`, `LPG` → `GLP`
    - `Transmission`: `Automatic` → `Automático`, `Manual` → `Manual`
 4. **Remoção de registros com variável alvo ausente**: Linhas sem valor de `Preco_BRL` foram descartadas
 5. **Extração da Marca**: A coluna `Marca` foi criada a partir do primeiro token de `Nome_Carro`
@@ -116,7 +123,7 @@ A análise exploratória foi realizada para entender a distribuição e as rela�
 
 ---
 
-## 📊 Seleção de Variáveis
+## Seleção de Variáveis
 
 Para o treinamento dos modelos, as variáveis foram divididas em:
 
@@ -145,7 +152,7 @@ Para o treinamento dos modelos, as variáveis foram divididas em:
 
 ---
 
-## 🤖 Modelos de Machine Learning
+## Modelos de Machine Learning
 
 Foram treinados e avaliados **7 modelos de regressão**, todos utilizando um pipeline com pré-processamento integrado:
 
@@ -170,33 +177,86 @@ Para o modelo KNN, foi realizada uma busca em grade (`GridSearchCV`) com valida�
 
 ---
 
-## 📈 Resultados
+## Resultados
 
-### Comparação dos Modelos (Conjunto de Teste)
+### Comparação dos Modelos (Conjunto de Teste, 6 veículos)
 
-| Modelo | R² | RMSE | MAE |
-|---|---|---|---|
-| **Ridge** | **0.8116** | **0.2037** | **0.1744** |
-| **Random Forest** | **0.8034** | **0.2081** | **0.1764** |
-| Gradient Boosting | 0.7876 | 0.2162 | 0.1887 |
-| Regressão Linear | 0.6971 | 0.2582 | 0.2473 |
-| KNN (Otimizado) | 0.6614 | 0.2730 | 0.2484 |
-| Lasso | 0.5328 | 0.3207 | 0.2819 |
-| KNN (Original, k=5) | 0.5349 | 0.3200 | 0.3003 |
-| Árvore de Decisão | 0.3735 | 0.3714 | 0.3200 |
+| Modelo | R² (R$) | RMSE (R$) | MAE (R$) | R² (log) | RMSE (log) | MAE (log) |
+|---|---|---|---|---|---|---|
+| Random Forest | 0.8134 | 16.821 | 14.708 | 0.7978 | 0.2110 | 0.1804 |
+| Gradient Boosting | 0.7773 | 18.377 | 16.458 | 0.7876 | 0.2162 | 0.1887 |
+| Ridge | 0.7537 | 19.325 | 16.135 | 0.8116 | 0.2037 | 0.1744 |
+| KNN (Otimizado) | 0.6603 | 22.696 | 20.578 | 0.6614 | 0.2730 | 0.2484 |
+| KNN (Original, k=5) | 0.5677 | 25.605 | 24.571 | 0.5349 | 0.3200 | 0.3003 |
+| Regressão Linear | 0.5662 | 25.648 | 23.204 | 0.6971 | 0.2582 | 0.2473 |
+| Lasso | −0.5422 | 48.360 | 33.520 | 0.5328 | 0.3207 | 0.2819 |
+| Árvore de Decisão | −1.0271 | 55.444 | 38.417 | 0.3735 | 0.3714 | 0.3200 |
 
-> **Métricas**: R² (quanto maior, melhor), RMSE e MAE (quanto menor, melhor). Valores calculados sobre o log do preço.
+> **Métricas**: R² (quanto maior, melhor), RMSE e MAE (quanto menor, melhor). As colunas "(R$)" usam as previsões convertidas de volta para reais com `np.expm1`; as colunas "(log)" são calculadas sobre `log1p(preço)`, a escala de treino.
+
+### Validação Cruzada Complementar (5-fold, 30 veículos)
+
+| Modelo | R² log médio ± desvio | MAE fora da amostra (R$) |
+|---|---|---|
+| Ridge | 0.785 ± 0.162 | 19.876 |
+| Random Forest | 0.613 ± 0.444 | 24.664 |
+| KNN (k=5) | 0.610 ± 0.305 | 25.064 |
+| Gradient Boosting | 0.594 ± 0.438 | 26.354 |
+| Lasso | 0.648 ± 0.152 | 29.220 |
+| Regressão Linear | 0.501 ± 0.264 | 34.149 |
+| Árvore de Decisão | 0.312 ± 0.666 | 37.150 |
 
 ### Análise dos Resultados
 
-- **Ridge** e **Random Forest** foram os modelos com melhor desempenho, ambos com R² acima de 0.80
-- A **otimização de hiperparâmetros do KNN** melhorou significativamente o desempenho do modelo, elevando o R² de 0.5349 para 0.6614
-- A **Árvore de Decisão** apresentou o pior desempenho, possivelmente devido ao overfitting com profundidade máxima de 10 em um dataset pequeno
-- O modelo **Lasso** teve desempenho inferior ao Ridge, indicando que a regularização L1 pode ter eliminado features relevantes
+- No conjunto de teste, **Random Forest**, **Gradient Boosting** e **Ridge** tiveram os menores erros (RMSE entre ≈ R$ 16,8 mil e ≈ R$ 19,3 mil, ou seja, erros da ordem de 15–20% do preço)
+- Na validação cruzada, o **Ridge** foi o mais estável; Random Forest e Gradient Boosting variaram muito entre folds, logo a vantagem do Random Forest no teste **não se confirma** de forma robusta
+- A **otimização do KNN** (k=4, `weights='distance'`, R² de validação cruzada ≈ 0,683) melhorou o modelo em relação ao k=5, mas ele permaneceu abaixo dos três melhores
+- **Lasso** e **Árvore de Decisão** tiveram R² negativo em R$, principalmente por um único veículo: o Honda Civic (gasolina, R$ 135 mil), cujo único "par" a gasolina no treino é o BMW Série 3 (R$ 260 mil)
+- **Limitação**: com 30 registros e 6 veículos de teste, os resultados têm alta variabilidade e **não devem ser generalizados** para o mercado de carros usados
 
 ---
 
-## 🧰 Tecnologias Utilizadas
+## Aprendizado Não Supervisionado (Parte 2)
+
+Os veículos foram agrupados **sem utilizar o preço** (variável alvo). O agrupamento usa apenas `Cilindrada`, `Quilometragem` e `Idade_Veiculo`, padronizadas. O preço só é usado ao final, para interpretar os grupos.
+
+### Etapas
+
+1. **Método do cotovelo** (K de 1 a 10) sobre a inércia do K-Means.
+2. **Silhueta média** de K=2 a K=6, para confirmar o K quando o cotovelo não é nítido.
+3. **K-Means** e **agrupamento hierárquico com ligação de Ward**, ambos com o mesmo K.
+4. **Silhueta por veículo**, para comparar os dois métodos.
+
+### Resultados
+
+| K | Silhueta K-Means | Silhueta Ward |
+|---|---|---|
+| 2 | 0.393 | 0.471 |
+| **3** | **0.514** | **0.513** |
+| 4 | 0.433 | 0.433 |
+| 5 | 0.428 | 0.428 |
+| 6 | 0.424 | 0.424 |
+
+- O cotovelo não é nítido (K=3 ou K=4); a silhueta desempata a favor de **K=3**.
+- **K-Means**: silhueta média 0.514, nenhum veículo com silhueta negativa. **Ward**: 0.513, com 1 veículo negativo (Fiat Argo).
+- Os dois métodos divergem em um único veículo, o **Fiat Argo** (1.300 cc, 48 mil km, 6 anos), que está na fronteira entre dois grupos. O K-Means foi ligeiramente melhor, mas na prática os métodos são equivalentes.
+
+| Grupo (K-Means) | Veículos | Cilindrada média | Km médio | Idade média | Preço médio (R$) |
+|---|---|---|---|---|---|
+| Compactos e SUVs recentes | 21 | 1.448 | 26.524 | 4,3 | 104.976 |
+| Picapes e SUVs a diesel | 5 | 2.800 | 55.000 | 5,4 | 209.000 |
+| Populares antigos | 4 | 1.200 | 62.000 | 7,0 | 47.250 |
+
+Sem ver o preço nem o combustível, o agrupamento separou três faixas de preço distintas, e o grupo de maior preço é exatamente o dos cinco veículos a diesel. Isso converge com as variáveis mais importantes do Random Forest (combustível e cilindrada). O grupo maior é heterogêneo no preço (do Fiat Mobi, R$ 48 mil, ao BMW Série 3, R$ 260 mil), e o agrupamento não substitui um modelo de previsão.
+
+### Outras análises sem o preço
+
+- **Detecção de anomalias** (Isolation Forest, LOF e Elliptic Envelope) sobre `Cilindrada`, `Quilometragem` e `Idade_Veiculo`: 4 veículos distintos sinalizados (Volkswagen Gol, Ford Ranger, Toyota SW4 e Renault Kwid), todos reais e plausíveis; nenhum removido.
+- **Ajuste em função de uma variável**: regressão linear, árvore de regressão e KNN usando só a cilindrada, com gráfico de treino, teste e curva de previsão.
+
+---
+
+## Tecnologias Utilizadas
 
 | Tecnologia | Versão | Uso |
 |---|---|---|
@@ -210,7 +270,7 @@ Para o modelo KNN, foi realizada uma busca em grade (`GridSearchCV`) com valida�
 
 ---
 
-## ▶️ Como Executar
+## Como Executar
 
 ### Pré-requisitos
 
@@ -243,19 +303,19 @@ pip install pandas numpy scikit-learn matplotlib seaborn jupyter
 
 ---
 
-## 📁 Estrutura do Projeto
+## Estrutura do Projeto
 
 ```
 DataScience-CarrosUsados-main/
 │
-├── Carros_Usados_Brasil.csv              # Dataset com 30 registros de carros usados
+├── Carros_Usados_Brasil.csv              # Dataset fictício com 30 registros de carros usados
 ├── used_car_valuation_engine_ptbr.ipynb  # Notebook principal com toda a análise
 └── README.md                             # Este arquivo
 ```
 
 ---
 
-## 📚 Referências
+## Referências
 - [Dataset original - Releitura] (https://www.kaggle.com/code/sumedh1507/used-car-valuation-engine)
 - [Scikit-learn Documentation](https://scikit-learn.org/stable/)
 - [Pandas Documentation](https://pandas.pydata.org/docs/)
